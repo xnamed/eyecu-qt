@@ -2,6 +2,6 @@ TEMPLATE    = subdirs
 SUBDIRS     = zlib minizip idn qtlockedfile hunspell
 SUBDIRS    += gpg-error
 SUBDIRS    += gcrypt
-SUBDIRS    += libotr
+SUBDIRS    += otr
 !symbian: SUBDIRS += qxtglobalshortcut
 !symbian: SUBDIRS += idle

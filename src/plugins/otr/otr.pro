@@ -1,14 +1,8 @@
-include(../plugins.inc) 
-
-#Project Configuration
-TARGET              = otr
-QT                  = core xml gui
-
+TARGET = otr
+LIBS += -L../../libs
 LIBS += -lotr -lgcrypt -lgpg-error
 
-greaterThan(QT_MAJOR_VERSION, 4) {
-	QT += concurrent
-}
+INCLUDEPATH += ../../thirdparty/otr/src
 
-CONFIG += util
 include(otr.pri)
+include(../plugins.inc)
