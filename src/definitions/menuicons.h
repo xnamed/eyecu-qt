@@ -367,5 +367,8 @@
 #define MNI_OTR_ENCRYPTED               "otr_yes"
 #define MNI_OTR_UNVERFIFIED             "otr_unverified"
 #define MNI_OTR_NO                      "otr_no"
+
+//HTTP File Upload
+#define MNI_HTTP_UPLOAD                 "httpUpload"
 // >>> eyeCU >>>
 #endif // DEF_MENUICONS_H

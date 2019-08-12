@@ -115,6 +115,9 @@
 #define NS_XHTML_IM								"http://jabber.org/protocol/xhtml-im"
 #define NS_X_POI                                "jabber:x:poi"
 
+//HTTP File Upload
+#define NS_HTTP_UPLOAD                          "urn:xmpp:http:upload"
+
 //Jingle
 #define NS_JINGLE                               "urn:xmpp:jingle:1"
 #define NS_JINGLE_APPS_RTP                      "urn:xmpp:jingle:apps:rtp:1"
