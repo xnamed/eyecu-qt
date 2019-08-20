@@ -1,3 +1,5 @@
-SOURCES += httpupload.cpp
+SOURCES += httpupload.cpp \
+    $$PWD/httpuploadservice.cpp
 
-HEADERS += httpupload.h
+HEADERS += httpupload.h \
+    $$PWD/httpuploadservice.h

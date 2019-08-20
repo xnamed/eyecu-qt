@@ -1,17 +1,11 @@
 #include "httpupload.h"
 
-/*#include "definitions/optionvalues.h"
-#include "definitions/optionwidgetorders.h"
-#include "definitions/optionnodes.h"
-#include "definitions/soundfiles.h"*/
 #include <definitions/namespaces.h>
 #include <definitions/menuicons.h>
 #include <definitions/resources.h>
 
 #include "utils/logger.h"
 #include <QDebug>
-
-#define SLOT_IQ_TIMEOUT         30000
 
 #define DIC_STORE                     "store"
 #define DIT_FILE                      "file"
@@ -20,8 +14,6 @@
 HttpUpload::HttpUpload():
     FDataForms(nullptr),
     FDiscovery(nullptr),
-    //FOptionsManager(nullptr),
-    FStanzaProcessor(nullptr),
     FHttpUpload(nullptr),
     FIconStorage(nullptr)
 {}
@@ -46,10 +38,6 @@ bool HttpUpload::initConnections(IPluginManager *APluginManager, int &AInitOrder
     if (plugin)
         FDataForms = qobject_cast<IDataForms *>(plugin->instance());
 
-    plugin = APluginManager->pluginInterface("IStanzaProcessor").value(0,nullptr);
-    if (plugin)
-        FStanzaProcessor = qobject_cast<IStanzaProcessor *>(plugin->instance());
-
     plugin = APluginManager->pluginInterface("IServiceDiscovery").value(0,NULL);
     if (plugin)
     {
@@ -60,11 +48,7 @@ bool HttpUpload::initConnections(IPluginManager *APluginManager, int &AInitOrder
         }
     }
 
-    //plugin = APluginManager->pluginInterface("IOptionsManager").value(0,nullptr);
-    //if (plugin)
-    //    FOptionsManager = qobject_cast<IOptionsManager *>(plugin->instance());
-
-    return FDataForms!=NULL && FStanzaProcessor!=NULL;
+    return FDataForms!=NULL;
 }
 
 bool HttpUpload::initSettings()
@@ -100,10 +84,13 @@ bool HttpUpload::isSupported(const Jid &AStreamJid) const
 {
     bool supported = false;
     IDiscoInfo dinfo = FDiscovery!=NULL ? FDiscovery->discoInfo(AStreamJid, AStreamJid.domain()) : IDiscoInfo();
-    for (int i=0; !supported && dinfo.features.contains(NS_HTTP_UPLOAD) && i<dinfo.identity.count(); i++)
+    if (dinfo.features.contains(NS_HTTP_UPLOAD))
     {
-        const IDiscoIdentity &ident = dinfo.identity.at(i);
-        supported = ident.category==DIC_STORE && ident.type==DIT_FILE;
+        for (int i=0; !supported && i<dinfo.identity.count(); i++)
+        {
+            const IDiscoIdentity &ident = dinfo.identity.at(i);
+            supported = ident.category==DIC_STORE && ident.type==DIT_FILE;
+        }
     }
     return supported;
 }
@@ -121,9 +108,24 @@ void HttpUpload::onDiscoInfoReceived(const IDiscoInfo &AInfo)
                 qDebug() << "Size limit:" << sizeLimit;
                 if (sizeLimit > 0)
                 {
-                   ServiceItem &item = FServices[AInfo.streamJid];
-                   item.service = AInfo.contactJid;
-                   item.sizeLimit = sizeLimit;
+                    bool found = false;
+                    QList<IHttpUploadService *> services = availableServices(AInfo.streamJid);
+
+                    for (QList<IHttpUploadService*>::ConstIterator it=services.constBegin(); it!=services.constEnd(); ++it)
+                    {
+                        if ((*it)->serviceJid() == AInfo.contactJid)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        IHttpUploadService *service = new HttpUploadService(AInfo.streamJid,sizeLimit);
+                        services.append(service);
+                        emit httpUploadServicesUpdated(AInfo.streamJid,services);
+                    }
                 }
 
                 LOG_STRM_DEBUG(AInfo.streamJid,QString("HTTP Upload in disco info received from=%1").arg(AInfo.contactJid.full()));
@@ -133,49 +135,11 @@ void HttpUpload::onDiscoInfoReceived(const IDiscoInfo &AInfo)
     }
 }
 
-void HttpUpload::stanzaRequestResult(const Jid &AStreamJid, const Stanza &AStanza)
+QList<IHttpUploadService *> HttpUpload::availableServices(const Jid &AStreamJid) const
 {
-    // Upload service responds with a slot
-    if (FIqUploadRequests.contains(AStanza.id()))
-    {
-        QDomElement slot=AStanza.firstElement("slot", NS_HTTP_UPLOAD);
-        if (!slot.isNull())
-        {
-            QString put=slot.firstChildElement("put").text();
-            QString get=slot.firstChildElement("get").text();
-            qDebug() << "PUT:" << put;
-            qDebug() << "GET:" << get;
-
-            if (!put.isEmpty() || !get.isEmpty())
-            {}
-            else
-            {}
-        }
-        else
-        {
-            XmppStanzaError err(AStanza);
-            LOG_STRM_WARNING(AStreamJid,QString("Failed requesting slot, id=%2: %3").arg(AStanza.id(),err.condition()));
-            emit httpUploadError(AStanza.id(),err);
-        }
-    }
+    return FServices.value(AStreamJid);
 }
 
-// Request a slot on the upload service
-void HttpUpload::requestUploadSlot(const Jid &AStreamJid, const QString &AService)
-{
-    Stanza request(STANZA_KIND_IQ);
-    request.setType(STANZA_TYPE_GET).setTo(AService).setUniqueId();
-    request.addElement("request",NS_HTTP_UPLOAD);
-    //request.setAttribute("filename", fileName);
-    //request.setAttribute("size", ASize);
-    //request.setAttribute("content-type", mimeType);
-    if (FStanzaProcessor->sendStanzaRequest(this,AStreamJid,request,SLOT_IQ_TIMEOUT))
-    {
-        LOG_STRM_INFO(AStreamJid,QString("New upload slot request sent, to=%1").arg(AService));
-        FIqUploadRequests.insert(request.id(),AService);
-    }
-    else
-    {
-        LOG_STRM_WARNING(AStreamJid,QString("Failed to send upload slot request, to=%1").arg(AService));
-    }
-}
+#if QT_VERSION < 0x050000
+Q_EXPORT_PLUGIN2(plg_httpupload, HttpUpload)
+#endif
