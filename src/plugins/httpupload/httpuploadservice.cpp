@@ -6,41 +6,52 @@
 #include <utils/xmpperror.h>
 #include "utils/logger.h"
 #include <QDebug>
+#include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
+#include <QFile>
+#include <QFileInfo>
 
 #define SLOT_IQ_TIMEOUT         30000
 #define DEFAULT_CONTENT_TYPE          "application/octet-stream"
 
-HttpUploadService::HttpUploadService(const Jid &AService, int ASizeLimit):
-    FServiceJid(AService),
+HttpUploadService::HttpUploadService(const Jid &AStreamJid, const Jid &AServiceJid, int ASizeLimit, QObject *APrent):
+	QObject(APrent),
+	FStreamJid(AStreamJid),
+	FServiceJid(AServiceJid),
     FSizeLimit(ASizeLimit),
-    FStanzaProcessor(PluginHelper::pluginInstance<IStanzaProcessor>())
+	FStanzaProcessor(PluginHelper::pluginInstance<IStanzaProcessor>()),
+	FNetworkAccessManager(new QNetworkAccessManager(this))
 {
-    FNetworkAccessManager = new QNetworkAccessManager(this);
+
 }
 
 HttpUploadService::~HttpUploadService()
 {}
+
+QObject *HttpUploadService::instance()
+{
+	return this;
+}
 
 void HttpUploadService::stanzaRequestResult(const Jid &AStreamJid, const Stanza &AStanza)
 {
     // Upload service responds with a slot
     if (FIqUploadRequests.contains(AStanza.id()))
     {
+		int id = FIqUploadRequests[AStanza.id()];
         QDomElement slot=AStanza.firstElement("slot", NS_HTTP_UPLOAD);
         if (!slot.isNull())
         {
-            QString put=slot.firstChildElement("put").text();
-            QString get=slot.firstChildElement("get").text();
-            qDebug() << "PUT:" << put;
-            qDebug() << "GET:" << get;
+			UploadRequest &request = FRequests[id];
+			request.put = QUrl::fromPercentEncoding(slot.firstChildElement("put").text().toLatin1());
+			request.get = QUrl::fromPercentEncoding(slot.firstChildElement("get").text().toLatin1());
+			qDebug() << "PUT:" << request.put;
+			qDebug() << "GET:" << request.get;
 
-            if ((!put.isEmpty() || !get.isEmpty()) && (FIODevices.contains(AStanza.id().toInt())))
+			if (!request.put.isEmpty() || !request.get.isEmpty())
             {
-                FUploadUrl[AStanza.id().toInt()]->put = put;
-                FUploadUrl[AStanza.id().toInt()]->get = get;
-                startUpload(put,AStanza.id().toInt());
+				startUpload(request.put, request.device);
             }
             else
             {
@@ -56,18 +67,29 @@ void HttpUploadService::stanzaRequestResult(const Jid &AStreamJid, const Stanza 
     }
 }
 
-int HttpUploadService::uploadFile(const Jid &AStreamJid, const Jid &AService, QIODevice *ADevice, const QByteArray &AContentType, const QString &AFileName)
+int HttpUploadService::uploadFile(QIODevice *ADevice, const QByteArray &AContentType, QString AFileName)
 {
-    int id=qrand();
-    int sizeLimit = 0;
-
-    if (sizeLimit > 0 && !ADevice->size() > sizeLimit)
+	if (ADevice->isOpen() && ADevice->size()>0 && FSizeLimit > 0 && ADevice->size() <= FSizeLimit)
     {
-        FIODevices.insert(id, ADevice);
-        requestUploadSlot(AStreamJid, AService, ADevice->size(), AContentType, AFileName, id);
-    }
+		int id;
+		for (id=qrand(); FRequests.contains(id); id++);
 
-    return id;
+		if (AFileName.isEmpty()) // No file name specified
+		{
+			QFile *file = qobject_cast<QFile*>(ADevice);
+			if (file)
+				AFileName = QFileInfo(*file).fileName();
+			else	// Not a file
+				return 0;
+		}
+		if (requestUploadSlot(FStreamJid, FServiceJid, ADevice->size(), AContentType, AFileName, id))
+		{
+			UploadRequest &request = FRequests[id];
+			request.device = ADevice;
+			return id;
+		}
+    }
+	return 0;
 }
 
 // Request a slot on the upload service
@@ -78,11 +100,11 @@ bool HttpUploadService::requestUploadSlot(const Jid &AStreamJid, const Jid &ASer
     request.addElement("request",NS_HTTP_UPLOAD);
     request.setAttribute("filename", AFileName);
     request.setAttribute("size", QString::number(ASize));
-    request.setAttribute("content-type", AContentType.isEmpty() || AContentType==NULL ? DEFAULT_CONTENT_TYPE : AContentType);
+	request.setAttribute("content-type", AContentType.isEmpty() ? DEFAULT_CONTENT_TYPE : AContentType);
     if (FStanzaProcessor->sendStanzaRequest(this,AStreamJid,request,SLOT_IQ_TIMEOUT))
     {
         LOG_STRM_INFO(AStreamJid,QString("New upload slot request sent, to=%1").arg(AService.bare()));
-        FIqUploadRequests.insert(request.id(),AService.bare());
+		FIqUploadRequests.insert(request.id(), AId);
         return true;
     }
     else
@@ -93,32 +115,36 @@ bool HttpUploadService::requestUploadSlot(const Jid &AStreamJid, const Jid &ASer
     return false;
 }
 
-void HttpUploadService::startUpload(const QString &APut, int AId)
+void HttpUploadService::startUpload(const QUrl &APutUrl, QIODevice *ADevice)
 {
-    QIODevice *device = FIODevices.take(AId);
     QNetworkRequest request;
-    request.setUrl(QUrl(APut));
-    request.setHeader(QNetworkRequest::ContentLengthHeader, device->size());
-    QNetworkReply *reply=FNetworkAccessManager->put(request, device->readAll());
-    connect(reply, SIGNAL(finished()), SLOT(onUploadFinished(AId)));
+	request.setUrl(APutUrl);
+	request.setHeader(QNetworkRequest::ContentLengthHeader, ADevice->size());
+	QNetworkReply *reply=FNetworkAccessManager->put(request, ADevice);
+	connect(reply, SIGNAL(finished()), SLOT(onUploadFinished()));
  //   connect(reply, SIGNAL(uploadProgress(qint64,qint64)), SLOT(onProgressChanged(qint64,qint64)))
 }
 
-void HttpUploadService::onUploadFinished(int AId)
+void HttpUploadService::onUploadFinished()
 {
     QNetworkReply *reply=qobject_cast<QNetworkReply *>(sender());
+	int id = FReplies.take(reply);
     if (reply->error()==QNetworkReply::NoError)
     {
-        FIODevices.remove(AId);
-        emit httpUploadFinished(AId,FUploadUrl[AId]->get);
+		emit httpUploadFinished(id, FRequests[id].get);
     }
     else
     {
-        emit httpUploadError(AId,reply->errorString());
+		emit httpUploadError(id,reply->errorString());
     }
 }
 
-Jid HttpUploadService::serviceJid() const
+const Jid &HttpUploadService::streamJid() const
+{
+	return FStreamJid;
+}
+
+const Jid &HttpUploadService::serviceJid() const
 {
     return FServiceJid;
 }

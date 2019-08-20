@@ -34,11 +34,11 @@ void HttpUpload::pluginInfo(IPluginInfo *APluginInfo)
 bool HttpUpload::initConnections(IPluginManager *APluginManager, int &AInitOrder)
 {
     Q_UNUSED(AInitOrder);
-    IPlugin *plugin = APluginManager->pluginInterface("IDataForms").value(0,nullptr);
+	IPlugin *plugin = APluginManager->pluginInterface("IDataForms").value(0, nullptr);
     if (plugin)
         FDataForms = qobject_cast<IDataForms *>(plugin->instance());
 
-    plugin = APluginManager->pluginInterface("IServiceDiscovery").value(0,NULL);
+	plugin = APluginManager->pluginInterface("IServiceDiscovery").value(0, nullptr);
     if (plugin)
     {
         FDiscovery = qobject_cast<IServiceDiscovery *>(plugin->instance());
@@ -48,7 +48,7 @@ bool HttpUpload::initConnections(IPluginManager *APluginManager, int &AInitOrder
         }
     }
 
-    return FDataForms!=NULL;
+	return FDataForms!=nullptr;
 }
 
 bool HttpUpload::initSettings()
@@ -83,7 +83,7 @@ void HttpUpload::registerDiscoFeatures(bool ARegister)
 bool HttpUpload::isSupported(const Jid &AStreamJid) const
 {
     bool supported = false;
-    IDiscoInfo dinfo = FDiscovery!=NULL ? FDiscovery->discoInfo(AStreamJid, AStreamJid.domain()) : IDiscoInfo();
+	IDiscoInfo dinfo = FDiscovery ? FDiscovery->discoInfo(AStreamJid, AStreamJid.domain()) : IDiscoInfo();
     if (dinfo.features.contains(NS_HTTP_UPLOAD))
     {
         for (int i=0; !supported && i<dinfo.identity.count(); i++)
@@ -122,7 +122,7 @@ void HttpUpload::onDiscoInfoReceived(const IDiscoInfo &AInfo)
 
                     if (!found)
                     {
-                        IHttpUploadService *service = new HttpUploadService(AInfo.streamJid,sizeLimit);
+						IHttpUploadService *service = new HttpUploadService(AInfo.streamJid, AInfo.contactJid, sizeLimit, this);
                         services.append(service);
                         emit httpUploadServicesUpdated(AInfo.streamJid,services);
                     }

@@ -3,12 +3,16 @@
 
 #include <interfaces/ihttpupload.h>
 #include <interfaces/istanzaprocessor.h>
-#include <QNetworkAccessManager>
+#include <QUrl>
 
-struct UploadUrl
+class QNetworkAccessManager;
+class QNetworkReply;
+
+struct UploadRequest
 {
-    QString put;
-    QString get;
+	QUrl put;
+	QUrl get;
+	QIODevice *device;
 };
 
 class HttpUploadService:
@@ -18,33 +22,36 @@ class HttpUploadService:
 {
     Q_OBJECT
     Q_INTERFACES(IHttpUploadService IStanzaRequestOwner)
+
 public:
-    HttpUploadService(const Jid &AService, int ASizeLimit);
+	HttpUploadService(const Jid &AStreamJid, const Jid &AServiceJid, int ASizeLimit, QObject *APrent=nullptr);
     ~HttpUploadService();
 
-    virtual QObject *instance() { return this; }
-    virtual Jid serviceJid() const;
-    virtual int sizeLimit() const;
-    virtual int uploadFile(const Jid &AStreamJid, const Jid &AService, QIODevice *ADevice, const QByteArray &AContentType, const QString &AFileName);
+	virtual QObject *instance() override;
+	virtual const Jid& streamJid() const override;
+	virtual const Jid& serviceJid() const override;
+	virtual int sizeLimit() const override;
+	virtual int uploadFile(QIODevice *ADevice, const QByteArray &AContentType=QByteArray(), QString AFileName=QString()) override;
     //IStanzaRequestOwner
-    virtual void stanzaRequestResult(const Jid &AStreamJid, const Stanza &AStanza);
+	virtual void stanzaRequestResult(const Jid &AStreamJid, const Stanza &AStanza) override;
 protected:
     bool requestUploadSlot(const Jid &AStreamJid, const Jid &AService, qint64 ASize, const QByteArray &AContentType, const QString &AFileName, int AId);
-    void startUpload(const QString &APut, int AId);
+	void startUpload(const QUrl &APutUrl, QIODevice *ADevice);
 protected slots:
-    void onUploadFinished(int AId);
+	void onUploadFinished();
 signals:
-    void httpUploadServiceError(const QString &AId, const XmppError &AError);
-    void httpUploadError(int AId, const QString &AError);
-    void httpUploadFinished(int AId, const QString &AUrl);
+	void httpUploadServiceError(const QString &AId, const XmppError &AError) override;
+	void httpUploadError(int AId, const QString &AError) override;
+	void httpUploadFinished(int AId, const QUrl &AUrl) override;
 private:
-    Jid FServiceJid;
-    int FSizeLimit;
+	const Jid FStreamJid;
+	const Jid FServiceJid;
+	const int FSizeLimit;
     IStanzaProcessor       *FStanzaProcessor;
     QNetworkAccessManager  *FNetworkAccessManager;
-    QMap<QString, QString> FIqUploadRequests;
-    QHash<int, QIODevice *> FIODevices;
-    QHash<int, UploadUrl *> FUploadUrl;
+	QMap<QString, int> FIqUploadRequests;
+	QHash<int, UploadRequest> FRequests;
+	QHash<QNetworkReply*, int> FReplies;
 };
 
 #endif // HTTPUPLOADSERVICE_H
