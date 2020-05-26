@@ -319,6 +319,7 @@
 #define OPV_STATUS_SHOW                                 "statuses.status.show"
 #define OPV_STATUS_TEXT                                 "statuses.status.text"
 #define OPV_STATUS_PRIORITY                             "statuses.status.priority"
+#define OPV_STATUS_HIDE_STANDARD                        "statuses.status.hide-standard"
 // AutoStatus
 #define OPV_AUTOSTARTUS_ROOT                            "statuses.autostatus"
 #define OPV_AUTOSTARTUS_AWAYRULE                        "statuses.autostatus.away-rule"

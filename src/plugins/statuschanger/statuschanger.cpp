@@ -232,6 +232,7 @@ bool StatusChanger::initSettings()
 	Options::setDefaultValue(OPV_ACCOUNT_AUTORECONNECT,true);
 	Options::setDefaultValue(OPV_ACCOUNT_STATUS_ISMAIN,true);
 	Options::setDefaultValue(OPV_ACCOUNT_STATUS_LASTONLINE,STATUS_MAIN_ID);
+	Options::setDefaultValue(OPV_STATUS_HIDE_STANDARD,false);
 
 	if (FOptionsManager)
 	{
@@ -263,6 +264,7 @@ QMultiMap<int, IOptionsDialogWidget *> StatusChanger::optionsDialogWidgets(const
 	{
 		widgets.insertMulti(OHO_STATUS_ITEMS, FOptionsManager->newOptionsDialogHeader(tr("Standard and users statuses"), AParent));
 		widgets.insertMulti(OWO_STATUS_ITEMS, new StatusOptionsWidget(this,AParent));
+		widgets.insertMulti(OWO_STATUS_ITEMS, FOptionsManager->newOptionsDialogWidget(Options::node(OPV_STATUS_HIDE_STANDARD),tr("Hide standard statuses menus (Chat, Away, XA, DND)"),AParent));
 	}
 	return widgets;
 }
@@ -717,6 +719,14 @@ void StatusChanger::createStatusActions(int AStatusId)
 {
 	int group = AStatusId > STATUS_MAX_STANDART_ID ? AG_SCSM_STATUSCHANGER_CUSTOM_STATUS : AG_SCSM_STATUSCHANGER_DEFAULT_STATUS;
 
+	if (Options::node(OPV_STATUS_HIDE_STANDARD).value().toBool() &&
+			(AStatusId==STATUS_CHAT ||
+			AStatusId==STATUS_AWAY ||
+			AStatusId==STATUS_EXAWAY ||
+			AStatusId==STATUS_DND))
+	{
+		return;
+	}
 	FMainMenu->addAction(createStatusAction(AStatusId,Jid::null,FMainMenu),group,true);
 	for (QMap<IPresence *, Menu *>::const_iterator it = FStreamMenu.constBegin(); it!=FStreamMenu.constEnd(); ++it)
 		it.value()->addAction(createStatusAction(AStatusId,it.key()->streamJid(),it.value()),group,true);
@@ -1259,6 +1269,23 @@ void StatusChanger::onOptionsChanged(const OptionsNode &ANode)
 {
 	if (ANode.path() == OPV_STATUSES_MODIFY)
 		FModifyStatus->setChecked(ANode.value().toBool());
+	else if (ANode.path() == OPV_STATUS_HIDE_STANDARD)
+	{
+		if (ANode.value().toBool())
+		{
+			removeStatusActions(STATUS_CHAT);
+			removeStatusActions(STATUS_AWAY);
+			removeStatusActions(STATUS_EXAWAY);
+			removeStatusActions(STATUS_DND);
+		}
+		else
+		{
+			createStatusActions(STATUS_CHAT);
+			createStatusActions(STATUS_AWAY);
+			createStatusActions(STATUS_EXAWAY);
+			createStatusActions(STATUS_DND);
+		}
+	}
 }
 
 void StatusChanger::onProfileOpened(const QString &AProfile)
