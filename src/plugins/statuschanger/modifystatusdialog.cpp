@@ -25,7 +25,7 @@ ModifyStatusDialog::ModifyStatusDialog(IStatusChanger *AStatusChanger, int AStat
 	ui.cmbShow->addItem(FStatusChanger->iconByShow(IPresence::Offline),FStatusChanger->nameByShow(IPresence::Offline),IPresence::Offline);
 
 	ui.cmbShow->setCurrentIndex(ui.cmbShow->findData(FStatusChanger->statusItemShow(FStatusId)));
-	ui.cmbShow->setEnabled(AStatusId > STATUS_MAX_STANDART_ID);
+	ui.cmbShow->setEnabled(AStatusId > STATUS_MAX_STANDARD_ID);
 	ui.lneName->setText(FStatusChanger->statusItemName(FStatusId));
 	ui.spbPriority->setValue(FStatusChanger->statusItemPriority(FStatusId));
 	ui.pteText->setPlainText(FStatusChanger->statusItemText(FStatusId));

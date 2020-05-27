@@ -284,7 +284,7 @@ void StatusOptionsWidget::reset()
 			priority->setData(STR_VALUE,status.priority);
 			tbwStatus->setItem(row,STC_PRIORITY,priority);
 
-			if (statusId > STATUS_MAX_STANDART_ID)
+			if (statusId > STATUS_MAX_STANDARD_ID)
 			{
 				show->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
 				name->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable);
@@ -355,7 +355,7 @@ void StatusOptionsWidget::onDeleteButtonClicked()
 			{
 				tbwStatus->removeRow(tableItem->row());
 			}
-			else if (statusId <= STATUS_MAX_STANDART_ID)
+			else if (statusId <= STATUS_MAX_STANDARD_ID)
 			{
 				QMessageBox::information(this,tr("Can't delete status"),tr("You can not delete standard statuses."));
 			}
@@ -384,7 +384,7 @@ void StatusOptionsWidget::onStatusItemSelectionChanged()
 		if (tableItem->data(STR_STATUSID).isValid())
 		{
 			int statusId = tableItem->data(STR_STATUSID).toInt();
-			allowDelete = allowDelete && (statusId > STATUS_MAX_STANDART_ID || statusId == STATUS_NULL_ID);
+			allowDelete = allowDelete && (statusId > STATUS_MAX_STANDARD_ID || statusId == STATUS_NULL_ID);
 			selectionEmpty = false;
 		}
 	}

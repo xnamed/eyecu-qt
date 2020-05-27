@@ -18,7 +18,7 @@
 #define STATUS_DND                          30
 #define STATUS_INVISIBLE                    35
 #define STATUS_OFFLINE                      40
-#define STATUS_MAX_STANDART_ID              100
+#define STATUS_MAX_STANDARD_ID              100
 
 class IStatusChanger
 {

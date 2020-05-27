@@ -491,8 +491,8 @@ int StatusChanger::addStatusItem(const QString &AName, int AShow, const QString 
 	if (statusId==STATUS_NULL_ID && !AName.isEmpty())
 	{
 		statusId = qrand();
-		while(statusId<=STATUS_MAX_STANDART_ID || FStatusItems.contains(statusId))
-			statusId = (statusId > STATUS_MAX_STANDART_ID) ? statusId+1 : STATUS_MAX_STANDART_ID+1;
+		while(statusId<=STATUS_MAX_STANDARD_ID || FStatusItems.contains(statusId))
+			statusId = (statusId > STATUS_MAX_STANDARD_ID) ? statusId+1 : STATUS_MAX_STANDARD_ID+1;
 
 		StatusItem status;
 		status.code = statusId;
@@ -536,7 +536,7 @@ void StatusChanger::updateStatusItem(int AStatusId, const QString &AName, int AS
 
 void StatusChanger::removeStatusItem(int AStatusId)
 {
-	if (AStatusId>STATUS_MAX_STANDART_ID && FStatusItems.contains(AStatusId) && !activeStatusItems().contains(AStatusId))
+	if (AStatusId>STATUS_MAX_STANDARD_ID && FStatusItems.contains(AStatusId) && !activeStatusItems().contains(AStatusId))
 	{
 		LOG_DEBUG(QString("Status item removed, id=%1").arg(AStatusId));
 		emit statusItemRemoved(AStatusId);
@@ -717,7 +717,7 @@ void StatusChanger::updateStatusAction(int AStatusId, Action *AAction) const
 
 void StatusChanger::createStatusActions(int AStatusId)
 {
-	int group = AStatusId > STATUS_MAX_STANDART_ID ? AG_SCSM_STATUSCHANGER_CUSTOM_STATUS : AG_SCSM_STATUSCHANGER_DEFAULT_STATUS;
+	int group = AStatusId > STATUS_MAX_STANDARD_ID ? AG_SCSM_STATUSCHANGER_CUSTOM_STATUS : AG_SCSM_STATUSCHANGER_DEFAULT_STATUS;
 
 	if (Options::node(OPV_STATUS_HIDE_STANDARD).value().toBool() &&
 			(AStatusId==STATUS_CHAT ||
@@ -765,7 +765,7 @@ void StatusChanger::createStreamMenu(IPresence *APresence)
 		QMap<int, StatusItem>::const_iterator it = FStatusItems.constBegin();
 		while (it != FStatusItems.constEnd())
 		{
-			if (it.key() > STATUS_MAX_STANDART_ID)
+			if (it.key() > STATUS_MAX_STANDARD_ID)
 				sMenu->addAction(createStatusAction(it.key(),streamJid,sMenu),AG_SCSM_STATUSCHANGER_CUSTOM_STATUS,true);
 			else if (it.key() > STATUS_NULL_ID)
 				sMenu->addAction(createStatusAction(it.key(),streamJid,sMenu),AG_SCSM_STATUSCHANGER_DEFAULT_STATUS,true);
@@ -984,7 +984,7 @@ void StatusChanger::resendUpdatedStatus(int AStatusId)
 void StatusChanger::removeAllCustomStatuses()
 {
 	foreach (int statusId, FStatusItems.keys())
-		if (statusId > STATUS_MAX_STANDART_ID)
+		if (statusId > STATUS_MAX_STANDARD_ID)
 			removeStatusItem(statusId);
 }
 
@@ -1206,7 +1206,7 @@ void StatusChanger::onOptionsOpened()
 	{
 		int statusId = ns.toInt();
 		OptionsNode soptions = Options::node(OPV_STATUS_ITEM, ns);
-		if (statusId > STATUS_MAX_STANDART_ID)
+		if (statusId > STATUS_MAX_STANDARD_ID)
 		{
 			QString statusName = soptions.value("name").toString();
 			if (!statusName.isEmpty() && statusByName(statusName)==STATUS_NULL_ID)
@@ -1230,7 +1230,7 @@ void StatusChanger::onOptionsOpened()
 	}
 
 	// Standard statuses are not in settings on first startup
-	for (QMap<int, StatusItem>::const_iterator it=FStatusItems.constBegin(); it!=FStatusItems.constEnd() && it.key()<=STATUS_MAX_STANDART_ID; ++it)
+	for (QMap<int, StatusItem>::const_iterator it=FStatusItems.constBegin(); it!=FStatusItems.constEnd() && it.key()<=STATUS_MAX_STANDARD_ID; ++it)
 		updateStatusActions(it.key());
 
 	FModifyStatus->setChecked(Options::node(OPV_STATUSES_MODIFY).value().toBool());
@@ -1247,7 +1247,7 @@ void StatusChanger::onOptionsClosed()
 		if (status.code > STATUS_NULL_ID)
 		{
 			OptionsNode soptions = Options::node(OPV_STATUS_ITEM, QString::number(status.code));
-			if (status.code > STATUS_MAX_STANDART_ID)
+			if (status.code > STATUS_MAX_STANDARD_ID)
 				soptions.setValue(status.show,"show");
 			soptions.setValue(status.name,"name");
 			soptions.setValue(status.text,"text");
