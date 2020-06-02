@@ -25,6 +25,8 @@ class IHttpUpload
 public:
     virtual QObject *instance() =0;
     virtual QList<IHttpUploadService *> availableServices(const Jid &AStreamJid) const=0;
+protected:
+    virtual void httpUploadServicesUpdated(const Jid &AStreamJid, const QList<IHttpUploadService *> &AServices) =0;
 };
 
 Q_DECLARE_INTERFACE(IHttpUploadService,"RWS.Plugin.IHttpUploadService/1.0")

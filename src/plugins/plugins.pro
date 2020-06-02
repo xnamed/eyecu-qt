@@ -2,7 +2,8 @@ TEMPLATE = subdirs
 include(pkgtest.inc)
 
 SUBDIRS += optionsmanager \
-    httpupload
+    httpupload \
+    httpuploadtest
 SUBDIRS += xmppstreams
 SUBDIRS += iqauth
 SUBDIRS += saslauth
