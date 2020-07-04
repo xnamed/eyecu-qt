@@ -6,6 +6,7 @@
 #include <interfaces/ihttpupload.h>
 #include <interfaces/imessagewidgets.h>
 #include <interfaces/imultiuserchat.h>
+#include "httpuploaddialog.h"
 
 class HttpUploadTest:
 		public QObject,
@@ -31,6 +32,7 @@ public:
 protected:
 	void updateToolBarAction(IMessageToolBarWidget *AWidget);
 	QList<IMessageToolBarWidget *> findToolBarWidgets(const Jid &AContactJid) const;
+	void sendFile(const Jid &AStreamJid, const Jid &AContactJid, const QString &AFileName);
 protected slots:
 	void onMultiUserChatStateChanged(int AState);
 protected slots:
@@ -39,8 +41,11 @@ protected slots:
 	void onToolBarWidgetDestroyed(QObject *AObject);
 protected slots:
 	void onHttpUploadServicesUpdated(const Jid &AStreamJid, const QList<IHttpUploadService *> &AServices);
+	//void onHttpUploadFinished(int AId, const QUrl &AUrl);
 protected slots:
 	void onUploadFileByAction(bool);
+protected slots:
+	//void onHttpUploadDialogDistroyed();
 private:
 	IMessageWidgets *FMessageWidgets;
 	IMultiUserChatManager *FMultiChatManager;

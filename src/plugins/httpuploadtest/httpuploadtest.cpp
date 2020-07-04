@@ -2,8 +2,12 @@
 #include <definitions/menuicons.h>
 #include <definitions/resources.h>
 #include <definitions/toolbargroups.h>
+#include <QFileDialog>
 #include <QDebug>
 
+#define ADR_STREAM_JID                Action::DR_StreamJid
+#define ADR_CONTACT_JID               Action::DR_Parametr1
+#define ADR_FILE_NAME                 Action::DR_Parametr2
 
 HttpUploadTest::HttpUploadTest()
 {
@@ -179,4 +183,51 @@ void HttpUploadTest::onHttpUploadServicesUpdated(const Jid &AStreamJid, const QL
 }
 
 void HttpUploadTest::onUploadFileByAction(bool)
-{}
+{
+	Action *action = qobject_cast<Action *>(sender());
+	if (action)
+	{
+		IMessageToolBarWidget *widget = FToolBarActions.key(action);
+
+		Jid streamJid = action->data(ADR_STREAM_JID).toString();
+		Jid contactJid = action->data(ADR_CONTACT_JID).toString();
+		QString file = action->data(ADR_FILE_NAME).toString();
+
+		if (file.isEmpty())
+		{
+			QWidget *parent = widget!=NULL ? widget->messageWindow()->instance() : NULL;
+			file = QFileDialog::getOpenFileName(parent,tr("Select File"));
+		}
+
+		if (!file.isEmpty())
+		{
+			if (streamJid.isValid() && contactJid.isValid())
+				sendFile(streamJid,contactJid,file);
+			else if (widget != NULL)
+				sendFile(widget->messageWindow()->streamJid(),widget->messageWindow()->contactJid(),file);
+		}
+
+		/*if (!file.isEmpty())
+		{
+			if (streamJid.isValid() && contactJid.isValid())
+				;
+			else if (widget != NULL)
+				;
+		}*/
+	}
+}
+
+void HttpUploadTest::sendFile(const Jid &AStreamJid, const Jid &AContactJid, const QString &AFileName)
+{
+	HttpUploadDialog *dialog = new HttpUploadDialog(AStreamJid,AFileName,FHttpUpload);
+
+	connect(dialog,SIGNAL(dialogDestroyed()),SLOT(onHttpUploadDialogDistroyed()));
+	dialog->show();
+}
+
+/*void HttpUploadTest::onHttpUploadDialogDistroyed()
+{
+	HttpUploadDialog *dialog = qobject_cast<HttpUploadDialog *>(sender());
+	if (dialog)
+	{}
+}*/
