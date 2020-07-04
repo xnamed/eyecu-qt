@@ -39,18 +39,20 @@ void HttpUploadService::stanzaRequestResult(const Jid &AStreamJid, const Stanza 
     // Upload service responds with a slot
     if (FIqUploadRequests.contains(AStanza.id()))
     {
-		int id = FIqUploadRequests[AStanza.id()];
+		int id = FIqUploadRequests.take(AStanza.id());
+		qDebug() << "id:" << id;
         QDomElement slot=AStanza.firstElement("slot", NS_HTTP_UPLOAD);
         if (!slot.isNull())
         {
 			UploadRequest &request = FRequests[id];
-			request.put = QUrl::fromPercentEncoding(slot.firstChildElement("put").text().toLatin1());
-			request.get = QUrl::fromPercentEncoding(slot.firstChildElement("get").text().toLatin1());
+			request.put = QUrl::fromPercentEncoding(slot.firstChildElement("put").attribute("url").toLatin1());
+			request.get = QUrl::fromPercentEncoding(slot.firstChildElement("get").attribute("url").toLatin1());
 			qDebug() << "PUT:" << request.put;
 			qDebug() << "GET:" << request.get;
 
 			if (!request.put.isEmpty() || !request.get.isEmpty())
             {
+				qDebug() << "startUpload";
 				startUpload(request.put, request.device);
             }
             else
@@ -84,6 +86,7 @@ int HttpUploadService::uploadFile(QIODevice *ADevice, const QByteArray &AContent
 		}
 		if (requestUploadSlot(FStreamJid, FServiceJid, ADevice->size(), AContentType, AFileName, id))
 		{
+			qDebug() << "id:" << id;
 			UploadRequest &request = FRequests[id];
 			request.device = ADevice;
 			return id;
@@ -96,11 +99,11 @@ int HttpUploadService::uploadFile(QIODevice *ADevice, const QByteArray &AContent
 bool HttpUploadService::requestUploadSlot(const Jid &AStreamJid, const Jid &AService, qint64 ASize, const QByteArray &AContentType, const QString &AFileName, int AId)
 {
     Stanza request(STANZA_KIND_IQ);
-    request.setType(STANZA_TYPE_GET).setTo(AService.bare()).setId(QString::number(AId));
-    request.addElement("request",NS_HTTP_UPLOAD);
-    request.setAttribute("filename", AFileName);
-    request.setAttribute("size", QString::number(ASize));
-	request.setAttribute("content-type", AContentType.isEmpty() ? DEFAULT_CONTENT_TYPE : AContentType);
+	request.setType(STANZA_TYPE_GET).setTo(AService.bare()).setId(QString::number(AId));
+	QDomElement elem = request.addElement("request",NS_HTTP_UPLOAD);
+	elem.setAttribute("filename", AFileName);
+	elem.setAttribute("size", QString::number(ASize));
+	elem.setAttribute("content-type", QString(AContentType.isEmpty() ? DEFAULT_CONTENT_TYPE : AContentType));
     if (FStanzaProcessor->sendStanzaRequest(this,AStreamJid,request,SLOT_IQ_TIMEOUT))
     {
         LOG_STRM_INFO(AStreamJid,QString("New upload slot request sent, to=%1").arg(AService.bare()));
