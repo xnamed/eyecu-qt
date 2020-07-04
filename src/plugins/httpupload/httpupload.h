@@ -9,10 +9,11 @@
 
 class HttpUpload: public QObject,
         public IPlugin,
-        public IHttpUpload
+		public IHttpUpload,
+		public IDiscoFeatureHandler
 {
     Q_OBJECT
-    Q_INTERFACES(IPlugin IHttpUpload)
+	Q_INTERFACES(IPlugin IHttpUpload IDiscoFeatureHandler)
 #if QT_VERSION >= 0x050000
     Q_PLUGIN_METADATA(IID "ru.rwsoftware.eyecu.IHttpUpload")
 #endif
@@ -30,6 +31,9 @@ public:
     virtual bool startPlugin(){return true;}
     //IHttpUploadService
     virtual QList<IHttpUploadService *> availableServices(const Jid &AStreamJid) const;
+	//IDiscoFeatureHandler
+	virtual bool execDiscoFeature(const Jid &AStreamJid, const QString &AFeature, const IDiscoInfo &ADiscoInfo);
+	virtual Action *createDiscoFeatureAction(const Jid &AStreamJid, const QString &AFeature, const IDiscoInfo &ADiscoInfo, QWidget *AParent);
 protected:
     bool isSupported(const Jid &AStreamJid) const;
     void registerDiscoFeatures(bool ARegister);
@@ -40,8 +44,7 @@ signals:
 private:
     IDataForms          *FDataForms;
     IServiceDiscovery   *FDiscovery;
-    IHttpUpload			*FHttpUpload;
-    IconStorage         *FIconStorage;
+	IHttpUpload			*FHttpUpload;
 private:
     QHash<Jid, QList<IHttpUploadService *> >FServices;
 };

@@ -3,6 +3,7 @@
 #include <definitions/namespaces.h>
 #include <definitions/menuicons.h>
 #include <definitions/resources.h>
+#include <definitions/discofeaturehandlerorders.h>
 
 #include "utils/logger.h"
 #include <QDebug>
@@ -14,8 +15,7 @@
 HttpUpload::HttpUpload():
     FDataForms(nullptr),
     FDiscovery(nullptr),
-    FHttpUpload(nullptr),
-    FIconStorage(nullptr)
+	FHttpUpload(nullptr)
 {}
 
 HttpUpload::~HttpUpload()
@@ -60,6 +60,11 @@ bool HttpUpload::initObjects()
 {
     //if (FOptionsManager)
     //    FOptionsManager->insertOptionsDialogHolder(this);
+	if (FDiscovery)
+	{
+		registerDiscoFeatures(true);
+		FDiscovery->insertFeatureHandler(NS_HTTP_UPLOAD,this,DFO_DEFAULT);
+	}
 
     return true;
 }
@@ -69,9 +74,9 @@ void HttpUpload::registerDiscoFeatures(bool ARegister)
     if (ARegister)
     {
         IDiscoFeature dfeature;
-        dfeature.active = true;
+		dfeature.active = false;
         dfeature.var = NS_HTTP_UPLOAD;
-        dfeature.icon = FIconStorage->getIcon(MNI_HTTP_UPLOAD);
+		dfeature.icon = IconStorage::staticStorage(RSR_STORAGE_MENUICONS)->getIcon(MNI_HTTP_UPLOAD);
         dfeature.name = tr("HTTP File Upload");
         dfeature.description = tr("Supports HTTP File Upload");
         FDiscovery->insertDiscoFeature(dfeature);
@@ -123,7 +128,8 @@ void HttpUpload::onDiscoInfoReceived(const IDiscoInfo &AInfo)
                     if (!found)
                     {
 						IHttpUploadService *service = new HttpUploadService(AInfo.streamJid, AInfo.contactJid, sizeLimit, this);
-                        services.append(service);
+						services.append(service);
+						FServices[AInfo.streamJid].append(service);
                         emit httpUploadServicesUpdated(AInfo.streamJid,services);
                     }
                 }
@@ -137,7 +143,20 @@ void HttpUpload::onDiscoInfoReceived(const IDiscoInfo &AInfo)
 
 QList<IHttpUploadService *> HttpUpload::availableServices(const Jid &AStreamJid) const
 {
+	qDebug() << "availableServices:" << FServices.value(AStreamJid);
     return FServices.value(AStreamJid);
+}
+
+bool HttpUpload::execDiscoFeature(const Jid &AStreamJid, const QString &AFeature, const IDiscoInfo &ADiscoInfo)
+{
+	if (AFeature == NS_HTTP_UPLOAD)
+		//
+	return false;
+}
+
+Action *HttpUpload::createDiscoFeatureAction(const Jid &AStreamJid, const QString &AFeature, const IDiscoInfo &ADiscoInfo, QWidget *AParent)
+{
+	return NULL;
 }
 
 #if QT_VERSION < 0x050000
