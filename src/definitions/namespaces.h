@@ -116,7 +116,7 @@
 #define NS_X_POI                                "jabber:x:poi"
 
 //HTTP File Upload
-#define NS_HTTP_UPLOAD                          "urn:xmpp:http:upload"
+#define NS_HTTP_UPLOAD                          "urn:xmpp:http:upload:0"
 
 //Jingle
 #define NS_JINGLE                               "urn:xmpp:jingle:1"
