@@ -128,6 +128,7 @@
 #define NS_JINGLE_TRANSPORTS_ICE_UDP            "urn:xmpp:jingle:transports:ice-udp:1"
 //Other
 #define NS_XMPP_STANZAS                         "urn:ietf:params:xml:ns:xmpp-stanzas"
+#define NS_INSTANTGAMING                        "http://jabber.org/protocol/games'/"
 // *** >>> eyeCU >>> ***
 
 #endif // DEF_NAMESPACES_H

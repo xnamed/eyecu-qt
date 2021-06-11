@@ -367,5 +367,8 @@
 #define MNI_OTR_ENCRYPTED               "otr_yes"
 #define MNI_OTR_UNVERFIFIED             "otr_unverified"
 #define MNI_OTR_NO                      "otr_no"
+
+//Instant Gaming
+#define MNI_INSTANTGAMING                "instantgaming"
 // >>> eyeCU >>>
 #endif // DEF_MENUICONS_H
