@@ -2,7 +2,8 @@ TEMPLATE = subdirs
 include(pkgtest.inc)
 
 SUBDIRS += optionsmanager \
-    instantgaming
+    instantgaming \
+    hangmangame
 SUBDIRS += xmppstreams
 SUBDIRS += iqauth
 SUBDIRS += saslauth

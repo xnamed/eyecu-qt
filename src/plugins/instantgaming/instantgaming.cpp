@@ -32,7 +32,7 @@ void InstantGaming::pluginInfo(IPluginInfo *APluginInfo)
 	APluginInfo->name = tr("Instant Gaming");
 	APluginInfo->description = tr("Serverless instant gaming in a one-to-one context.");
 	APluginInfo->version = "1.0";
-	APluginInfo->author = tr("Road Works Software");
+	APluginInfo->author = "Road Works Software";
 	APluginInfo->homePage = "http://www.eyecu.ru";
 	APluginInfo->dependences.append(DATAFORMS_UUID);
 	APluginInfo->dependences.append(SERVICEDISCOVERY_UUID);
