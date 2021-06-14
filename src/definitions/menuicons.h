@@ -370,5 +370,6 @@
 
 //Instant Gaming
 #define MNI_INSTANTGAMING                "instantgaming"
+#define MNI_HANGMAN_GAME                 "hangmangame"
 // >>> eyeCU >>>
 #endif // DEF_MENUICONS_H

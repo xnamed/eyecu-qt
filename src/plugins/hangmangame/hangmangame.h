@@ -4,6 +4,7 @@
 #include <interfaces/ihangmangame.h>
 #include <interfaces/ipluginmanager.h>
 #include <interfaces/iinstantgaming.h>
+#include <interfaces/iservicediscovery.h>
 
 class HangmanGame:
 		public QObject,
@@ -28,6 +29,13 @@ public:
 	bool initObjects();
 	bool initSettings();
 	bool startPlugin() {return this;}
+
+protected:
+	void registerDiscoFeatures();
+	bool isSupported(const Jid &AStreamJid, const Jid &AContactJid);
+
+private:
+	IServiceDiscovery *FDiscovery;
 };
 
 #endif // HANGMANGAME_H
