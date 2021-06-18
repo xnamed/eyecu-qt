@@ -3,7 +3,6 @@
 #include <definitions/resources.h>
 #include <definitions/menuicons.h>
 
-
 HangmanGame::HangmanGame():
 	FDiscovery(NULL)
 {
@@ -44,6 +43,12 @@ bool HangmanGame::initObjects()
 bool HangmanGame::initSettings()
 {
 	return true;
+}
+
+void HangmanGame::gameInfo(IGameInfo *AGameInfo)
+{
+	AGameInfo->name = tr("Hangman");
+	AGameInfo->category = tr("guessing");
 }
 
 void HangmanGame::registerDiscoFeatures()

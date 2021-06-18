@@ -1,20 +1,22 @@
 #ifndef HANGMANGAME_H
 #define HANGMANGAME_H
 
-#include <interfaces/ihangmangame.h>
+#include <interfaces/igame.h>
 #include <interfaces/ipluginmanager.h>
 #include <interfaces/iinstantgaming.h>
 #include <interfaces/iservicediscovery.h>
 
+#define HANGMANGAME_UUID  "6BCB485A-4672-4B8F-AF9B-C9A5620C3750"
+
 class HangmanGame:
 		public QObject,
 		public IPlugin,
-		public IHangmanGame
+		public IGame
 {
 	Q_OBJECT
-	Q_INTERFACES(IPlugin IHangmanGame)
+	Q_INTERFACES(IPlugin IGame)
 #if QT_VERSION >= 0x050000
-	Q_PLUGIN_METADATA(IID "ru.rwsoftware.eyecu.IHangmanGame")
+	Q_PLUGIN_METADATA(IID "ru.rwsoftware.eyecu.IGame")
 #endif
 
 public:
@@ -30,10 +32,11 @@ public:
 	bool initSettings();
 	bool startPlugin() {return this;}
 
+	//IGame
+	void gameInfo(IGameInfo *AGameInfo);
+	bool isSupported(const Jid &AStreamJid, const Jid &AContactJid);
 protected:
 	void registerDiscoFeatures();
-	bool isSupported(const Jid &AStreamJid, const Jid &AContactJid);
-
 private:
 	IServiceDiscovery *FDiscovery;
 };
