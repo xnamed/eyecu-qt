@@ -5,6 +5,7 @@
 #include <definitions/xmpperrors.h>
 #include <definitions/stanzahandlerorders.h>
 #include <utils/message.h>
+#include <definitions/toolbargroups.h>
 
 #define SHC_INSTANTGAMING_INVITE         "/message/invite[@xmlns='" NS_INSTANTGAMING "']"
 #define SHC_INSTANTGAMING_DECLINE         "/message/decline[@xmlns='" NS_INSTANTGAMING "']"
@@ -14,11 +15,15 @@
 #define SHC_INSTANTGAMING_SAVED         "/message/saved[@xmlns='" NS_INSTANTGAMING "']"
 #define SHC_INSTANTGAMING_TERMINATE         "/message/terminate[@xmlns='" NS_INSTANTGAMING "']"
 
+#define ADR_STREAM_JID   Action::DR_StreamJid
+#define ADR_CONTACT_JID  Action::DR_Parametr1
+
 InstantGaming::InstantGaming():
 	FXmppStreamManager(NULL),
 	FStanzaProcessor(NULL),
 	FDiscovery(NULL),
-	FDataForms(NULL)
+	FDataForms(NULL),
+	FMessageWidgets(NULL)
 {
 }
 
@@ -64,6 +69,22 @@ bool InstantGaming::initConnections(IPluginManager *APluginManager, int &AInitOr
 	plugin = APluginManager->pluginInterface("IDataForms").value(0,NULL);
 	if (plugin)
 		FDataForms = qobject_cast<IDataForms *>(plugin->instance());
+
+	QList<IPlugin *> games = APluginManager->pluginInterface("IGame");
+	for (QList<IPlugin *>::ConstIterator it=games.constBegin(); it!=games.constEnd(); ++it)
+	{
+		FGames.insert((*it)->pluginUuid(),qobject_cast<IGame *>((*it)->instance()));
+	}
+
+	plugin = APluginManager->pluginInterface("IMessageWidgets").value(0,NULL);
+	if (plugin)
+	{
+		FMessageWidgets = qobject_cast<IMessageWidgets *>(plugin->instance());
+		if (FMessageWidgets)
+		{
+			connect(FMessageWidgets->instance(),SIGNAL(toolBarWidgetCreated(IMessageToolBarWidget*)),SLOT(onToolBarWidgetCreated(IMessageToolBarWidget*)));
+		}
+	}
 
 	return true;
 }
@@ -341,3 +362,69 @@ bool InstantGaming::stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza
 	}
 	return false;
 }
+
+void InstantGaming::onToolBarWidgetCreated(IMessageToolBarWidget *AWidget)
+{
+	IMessageChatWindow *chatWindow = qobject_cast<IMessageChatWindow *>(AWidget->messageWindow()->instance());
+	if (chatWindow)
+		connect(AWidget->messageWindow()->address()->instance(),SIGNAL(addressChanged(Jid,Jid)),SLOT(onToolBarWidgetAddressChanged(Jid,Jid)));
+	connect(AWidget->instance(),SIGNAL(destroyed(QObject*)),SLOT(onToolBarWidgetDestroyed(QObject*)));
+
+	updateToolBarAction(AWidget);
+}
+
+void InstantGaming::onToolBarWidgetAddressChanged(const Jid &AStreamBefore, const Jid &AContactBefore)
+{
+	Q_UNUSED(AStreamBefore); Q_UNUSED(AContactBefore);
+	IMessageAddress *address=qobject_cast<IMessageAddress *>(sender());
+	if (address)
+	{
+		foreach (IMessageToolBarWidget *widget, FToolBarActions.keys())
+			if (widget->messageWindow()->address() == address)
+				updateToolBarAction(widget);
+	}
+}
+
+void InstantGaming::onToolBarWidgetDestroyed(QObject *AObject)
+{
+	foreach (IMessageToolBarWidget *widget, FToolBarActions.keys())
+		if (qobject_cast<QObject *>(widget->instance()) == AObject)
+			FToolBarActions.remove(widget);
+}
+
+void InstantGaming::updateToolBarAction(IMessageToolBarWidget *AWidget)
+{
+	Action *gameAction = FToolBarActions.value(AWidget);
+	IMessageChatWindow *chatWindow = qobject_cast<IMessageChatWindow *>(AWidget->messageWindow()->instance());
+
+	if (chatWindow != NULL)
+	{
+		if (gameAction == NULL)
+		{
+			gameAction = new Action(AWidget->toolBarChanger()->toolBar());
+			gameAction->setIcon(RSR_STORAGE_MENUICONS, MNI_INSTANTGAMING);
+			gameAction->setText(tr("Play Game"));
+			//gameAction->setShortcutId();
+			gameAction->setData(ADR_STREAM_JID,chatWindow->streamJid().full());
+			gameAction->setData(ADR_CONTACT_JID,chatWindow->contactJid().full());
+			connect(gameAction,SIGNAL(triggered(bool)),SLOT(onShowGameSelectorByToolBarAction(bool)));
+			AWidget->toolBarChanger()->insertAction(gameAction,TBG_MWTBW_INSTANTGAMING);
+			FToolBarActions.insert(AWidget,gameAction);
+		}
+		gameAction->setEnabled(isSupported(chatWindow->streamJid(),chatWindow->contactJid()));
+	}
+}
+
+void InstantGaming::onShowGameSelectorByToolBarAction(bool)
+{
+	Action *action = qobject_cast<Action *>(sender());
+	if (action)
+	{
+		Jid streamJid = action->data(ADR_STREAM_JID).toString();
+		Jid contactJid = action->data(ADR_CONTACT_JID).toString();
+		showGameSelector(streamJid,contactJid);
+	}
+}
+
+void InstantGaming::showGameSelector(const Jid &AStreamJid, const Jid &AContactJid)
+{}

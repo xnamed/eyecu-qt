@@ -2,11 +2,13 @@
 #define INSTANTGAMING_H
 
 #include <interfaces/iinstantgaming.h>
+#include <interfaces/igame.h>
 #include <interfaces/ipluginmanager.h>
 #include <interfaces/ixmppstreammanager.h>
 #include <interfaces/istanzaprocessor.h>
 #include <interfaces/iservicediscovery.h>
 #include <interfaces/idataforms.h>
+#include <interfaces/imessagewidgets.h>
 
 class InstantGaming:
 		public QObject,
@@ -49,6 +51,8 @@ public:
 protected:
 	void registerDiscoFeatures();
 	bool isSupported(const Jid &AStreamJid, const Jid &AContactJid) const;
+	void updateToolBarAction(IMessageToolBarWidget *AWidget);
+	void showGameSelector(const Jid &AStreamJid, const Jid &AContactJid);
 signals:
 	void invitationReceived(const IInstantGamePlay &AGame);
 	void invitationDeclined(const QString &AReason, const QString &AThread);
@@ -60,13 +64,21 @@ signals:
 protected slots:
 	void onXmppStreamOpened(IXmppStream *AXmppStream);
 	void onXmppStreamClosed(IXmppStream *AXmppStream);
+protected slots:
+	void onShowGameSelectorByToolBarAction(bool);
+	void onToolBarWidgetCreated(IMessageToolBarWidget *AWidget);
+	void onToolBarWidgetAddressChanged(const Jid &AStreamBefore, const Jid &AContactBefore);
+	void onToolBarWidgetDestroyed(QObject *AObject);
 private:
 	int FSHIGames;
+	QHash<QUuid, IGame*> FGames;
+	QMap<IMessageToolBarWidget*, Action*> FToolBarActions;
 private:
 	IXmppStreamManager *FXmppStreamManager;
 	IStanzaProcessor  *FStanzaProcessor;
 	IServiceDiscovery *FDiscovery;
 	IDataForms *FDataForms;
+	IMessageWidgets *FMessageWidgets;
 };
 
 #endif // INSTANTGAMING_H
