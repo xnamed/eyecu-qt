@@ -1,3 +1,8 @@
-SOURCES += instantgaming.cpp
+SOURCES += instantgaming.cpp \
+	gameselect.cpp
 
-HEADERS += instantgaming.h
+HEADERS += instantgaming.h \
+	gameselect.h
+
+FORMS += \
+	gameselect.ui

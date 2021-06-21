@@ -24,17 +24,18 @@ public:
 	~HangmanGame();
 
 	//IPlugin
-	QObject *instance() {return this;}
-	QUuid pluginUuid() const {return HANGMANGAME_UUID;}
-	void pluginInfo(IPluginInfo *APluginInfo);
-	bool initConnections(IPluginManager *APluginManager, int &AInitOrder);
-	bool initObjects();
-	bool initSettings();
-	bool startPlugin() {return this;}
+	virtual QObject *instance() {return this;}
+	virtual QUuid pluginUuid() const {return HANGMANGAME_UUID;}
+	virtual void pluginInfo(IPluginInfo *APluginInfo);
+	virtual bool initConnections(IPluginManager *APluginManager, int &AInitOrder);
+	virtual bool initObjects();
+	virtual bool initSettings();
+	virtual bool startPlugin() {return this;}
 
 	//IGame
-	void gameInfo(IGameInfo *AGameInfo);
-	bool isSupported(const Jid &AStreamJid, const Jid &AContactJid);
+	virtual void gameInfo(IGameInfo *AGameInfo);
+	virtual bool isSupported(const Jid &AStreamJid, const Jid &AContactJid);
+	virtual void startGame(const QString &AThread, int AType);
 protected:
 	void registerDiscoFeatures();
 private:

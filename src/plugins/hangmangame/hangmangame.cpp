@@ -49,6 +49,8 @@ void HangmanGame::gameInfo(IGameInfo *AGameInfo)
 {
 	AGameInfo->name = tr("Hangman");
 	AGameInfo->category = tr("guessing");
+	AGameInfo->icon = IconStorage::staticStorage(RSR_STORAGE_MENUICONS)->getIcon(MNI_HANGMAN_GAME);
+	AGameInfo->var = NS_HANGMAN_GAME;
 }
 
 void HangmanGame::registerDiscoFeatures()
@@ -67,3 +69,7 @@ bool HangmanGame::isSupported(const Jid &AStreamJid, const Jid &AContactJid)
 	return !FDiscovery==NULL||!FDiscovery->hasDiscoInfo(AStreamJid,AContactJid)||
 			FDiscovery->discoInfo(AStreamJid,AContactJid).features.contains(NS_HANGMAN_GAME);
 }
+
+void HangmanGame::startGame(const QString &AThread, int AType)
+{}
+

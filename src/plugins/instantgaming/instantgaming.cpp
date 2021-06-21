@@ -7,6 +7,9 @@
 #include <utils/message.h>
 #include <definitions/toolbargroups.h>
 
+#include "gameselect.h"
+#include <utils/widgetmanager.h>
+
 #define SHC_INSTANTGAMING_INVITE         "/message/invite[@xmlns='" NS_INSTANTGAMING "']"
 #define SHC_INSTANTGAMING_DECLINE         "/message/decline[@xmlns='" NS_INSTANTGAMING "']"
 #define SHC_INSTANTGAMING_JOIN         "/message/join[@xmlns='" NS_INSTANTGAMING "']"
@@ -17,6 +20,18 @@
 
 #define ADR_STREAM_JID   Action::DR_StreamJid
 #define ADR_CONTACT_JID  Action::DR_Parametr1
+
+#define INSTANTGAMING_INVITE_NEW             "new"
+#define INSTANTGAMING_INVITE_RENEW           "renew"
+#define INSTANTGAMING_INVITE_ADJOURNED       "adjourned"
+#define INSTANTGAMING_INVITE_CONSTRUCTED     "constructed"
+
+#define INSTANTGAMING_REASON_WON             "won"
+#define INSTANTGAMING_REASON_LOST            "lost"
+#define INSTANTGAMING_REASON_DRAW            "draw"
+#define INSTANTGAMING_REASON_RESIGN          "resign"
+#define INSTANTGAMING_REASON_ADJOURN         "adjourn"
+#define INSTANTGAMING_REASON_CHEATING        "cheating"
 
 InstantGaming::InstantGaming():
 	FXmppStreamManager(NULL),
@@ -115,33 +130,34 @@ void InstantGaming::registerDiscoFeatures()
 
 bool InstantGaming::isSupported(const Jid &AStreamJid, const Jid &AContactJid) const
 {
-	return FDiscovery==NULL||!FDiscovery->hasDiscoInfo(AStreamJid,AContactJid)||
+	return !FDiscovery==NULL||!FDiscovery->hasDiscoInfo(AStreamJid,AContactJid)||
 			FDiscovery->discoInfo(AStreamJid,AContactJid).features.contains(NS_INSTANTGAMING);
 }
 
-bool InstantGaming::sendInvitation(const IInstantGamePlay &AGame)
+bool InstantGaming::sendInvitation(const QString &AThread, IDataForm &AForm, const QString &AMessage, int AType)
 {
-	if (FStanzaProcessor && FDataForms && !AGame.threadId.isEmpty())
+	IInstantGamePlay game = FActiveGames.value(AThread);
+	if (FStanzaProcessor && FDataForms)
 	{
 		Stanza invite(STANZA_KIND_MESSAGE);
-		invite.setTo(AGame.contactJid.full());
-		invite.createElement("thread").appendChild(invite.createTextNode(AGame.threadId));
+		invite.setTo(game.contactJid.full());
+		invite.createElement("thread").appendChild(invite.createTextNode(game.threadId));
 
 		QDomElement inviteElem = invite.addElement("invite", NS_INSTANTGAMING);
-		inviteElem.setAttribute("type", AGame.type);
+		inviteElem.setAttribute("type", inviteTypeToString(AType));
 
-		if (!AGame.reason.isEmpty())
+		if (!AMessage.isEmpty())
 		{
-			inviteElem.appendChild(invite.createElement("reason")).appendChild(invite.createTextNode(AGame.reason));
+			inviteElem.appendChild(invite.createElement("reason")).appendChild(invite.createTextNode(AMessage));
 		}
 
 		QDomElement gameElem = inviteElem.appendChild(invite.createElement("game")).toElement();
-		gameElem.setAttribute("var", AGame.game);
-		FDataForms->xmlForm(AGame.form,gameElem);
+		gameElem.setAttribute("var", game.var);
 
-		if (!AGame.message.isEmpty())
-		{}
-		if (FStanzaProcessor->sendStanzaOut(AGame.streamJid,invite))
+		if (AType == IInstantGaming::Adjourned || AType == IInstantGaming::Constructed)
+			FDataForms->xmlForm(AForm,gameElem);
+
+		if (FStanzaProcessor->sendStanzaOut(game.streamJid,invite))
 			return true;
 	}
 	return false;
@@ -166,7 +182,7 @@ bool InstantGaming::declineInvitation(const Jid &AStreamJid, const Jid &AContact
 	return false;
 }
 
-bool InstantGaming::joinGame(const Jid &AStreamJid, const Jid &AContactJid, const QString &AThread)
+bool InstantGaming::joinGame(const Jid &AStreamJid, const Jid &AContactJid, const QString &AMessage, const QString &AThread)
 {
 	if (FStanzaProcessor)
 	{
@@ -191,64 +207,68 @@ bool InstantGaming::rejectGame(const Jid &AStreamJid, const Stanza &AStanza)
 	return false;
 }
 
-bool InstantGaming::sendTurn(const IInstantGamePlay &AGame, const QDomElement &AElement)
+bool InstantGaming::sendTurn(const QString &AThread, const QString &AMessage, const QDomElement &AElement)
 {
+	IInstantGamePlay game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza turn(STANZA_KIND_MESSAGE);
-		turn.setTo(AGame.contactJid.full()).setType(MESSAGE_TYPE_CHAT);
-		turn.createElement("thread").appendChild(turn.createTextNode(AGame.threadId));
+		turn.setTo(game.contactJid.full()).setType(MESSAGE_TYPE_CHAT);
+		turn.createElement("thread").appendChild(turn.createTextNode(AThread));
 
 		QDomElement turnElem = turn.addElement("turn", NS_INSTANTGAMING);
 		turnElem.appendChild(AElement);
 
-		if (!AGame.message.isEmpty())
+		if (AMessage.isEmpty())
 		{}
-		if (FStanzaProcessor->sendStanzaOut(AGame.streamJid,turn))
+		if (FStanzaProcessor->sendStanzaOut(game.streamJid,turn))
 			return true;
 	}
 	return false;
 }
 
-bool InstantGaming::sendSave(const Jid &AStreamJid, const Jid &AContactJid, const QString &AThread)
+bool InstantGaming::sendSave(const QString &AThread)
 {
+	IInstantGamePlay game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza save(STANZA_KIND_MESSAGE);
-		save.setTo(AContactJid.full());
+		save.setTo(game.contactJid.full());
 		save.createElement("thread").appendChild(save.createTextNode(AThread));
 		save.addElement("save",NS_INSTANTGAMING);
-		if (FStanzaProcessor->sendStanzaOut(AStreamJid,save))
+		if (FStanzaProcessor->sendStanzaOut(game.streamJid,save))
 			return true;
 	}
 	return false;
 }
 
-bool InstantGaming::sendSaved(const Jid &AStreamJid, const Jid &AContactJid, const QString &AThread)
+bool InstantGaming::sendSaved(const QString &AThread)
 {
+	IInstantGamePlay game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza saved(STANZA_KIND_MESSAGE);
-		saved.setTo(AContactJid.full());
+		saved.setTo(game.contactJid.full());
 		saved.createElement("thread").appendChild(saved.createTextNode(AThread));
 		saved.addElement("saved",NS_INSTANTGAMING);
-		if (FStanzaProcessor->sendStanzaOut(AStreamJid,saved))
+		if (FStanzaProcessor->sendStanzaOut(game.streamJid,saved))
 			return true;
 	}
 	return false;
 }
 
-bool InstantGaming::terminateGame(const Jid &AStreamJid, const Jid &AContactJid, const QString &AReason, const QString &AThread)
+bool InstantGaming::terminateGame(const QString &AThread, const QString &AMessage, int AReason)
 {
+	IInstantGamePlay game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza terminate(STANZA_KIND_MESSAGE);
-		terminate.setTo(AContactJid.full());
+		terminate.setTo(game.contactJid.full());
 		terminate.createElement("thread").appendChild(terminate.createTextNode(AThread));
 		terminate.addElement("terminate", NS_INSTANTGAMING);
-		terminate.setAttribute("reason", AReason);
+		terminate.setAttribute("reason", terminateReasonToString(AReason));
 
-		if (FStanzaProcessor->sendStanzaOut(AStreamJid,terminate))
+		if (FStanzaProcessor->sendStanzaOut(game.streamJid,terminate))
 			return true;
 	}
 	return false;
@@ -293,19 +313,18 @@ bool InstantGaming::stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza
 			instantGame.threadId = threadId;
 
 			QDomElement inviteElem = AStanza.firstElement("invite",NS_INSTANTGAMING);
-			instantGame.type = inviteElem.attribute("type");
-			instantGame.reason = inviteElem.firstChildElement("reason").text();
+			int inviteType = inviteTypeToCode(inviteElem.attribute("type"));
+			QString reason = inviteElem.firstChildElement("reason").text();
 
 			QDomElement gameElem = inviteElem.firstChildElement("game");
-			instantGame.game = gameElem.attribute("var");
-			instantGame.message = message.body();
+			instantGame.var = gameElem.attribute("var");
 
-			if (FDiscovery && !instantGame.game.isEmpty() && FDiscovery->hasFeatureHandler(instantGame.game))
+			if (FDiscovery && !instantGame.var.isEmpty() && FDiscovery->hasFeatureHandler(instantGame.var))
 			{
 				QDomElement formElem = Stanza::findElement(gameElem,"x",NS_JABBER_DATA);
 
 				if (!formElem.isNull())
-					instantGame.form = FDataForms->dataForm(formElem);
+					IDataForm form = FDataForms->dataForm(formElem);
 				emit invitationReceived(instantGame);
 			}
 			else
@@ -427,4 +446,133 @@ void InstantGaming::onShowGameSelectorByToolBarAction(bool)
 }
 
 void InstantGaming::showGameSelector(const Jid &AStreamJid, const Jid &AContactJid)
-{}
+{
+	GameSelect *select = new GameSelect(this,AStreamJid,AContactJid,FGames);
+	WidgetManager::showActivateRaiseWindow(select);
+}
+
+void InstantGaming::selectGame(IInstantGamePlay &AGame, const QString &AMessage, int AType)
+{
+	QString threadId;
+	IDataForm form;
+	if (AType == New)
+	{
+		int id;
+		for (id=qrand(); FActiveGames.keys().contains(QString::number(id)); id++);
+		threadId = QString::number(id);
+	}
+	else if (AType != New)
+	{
+		threadId = AGame.threadId;
+		if (AType != Renew)
+		{
+			//load game
+		}
+	}
+	FActiveGames.insert(threadId,AGame);
+	sendInvitation(threadId,form,AMessage,AType);
+}
+
+void InstantGaming::startGame(IInstantGamePlay &AGame, int AType)
+{
+	if (AGame.player == Initiator)
+	{
+		for (QHash<QUuid, IGame *>::ConstIterator it=FGames.constBegin(); it!=FGames.constEnd(); ++it)
+		{
+			IGameInfo gameInfo;
+			(*it)->gameInfo(&gameInfo);
+			if (gameInfo.var == AGame.var)
+			{
+				AGame.uuid = it.key();
+				FActiveGames.insert(AGame.threadId,AGame);
+			}
+		}
+	}
+	IGame *game = FGames.value(AGame.uuid);
+	if (game)
+	{
+		game->startGame(AGame.threadId, AType);
+	}
+}
+
+int InstantGaming::inviteTypeToCode(const QString &AType) const
+{
+	int type;
+	if (AType == INSTANTGAMING_INVITE_NEW)
+		type = IInstantGaming::New;
+	else if (AType == INSTANTGAMING_INVITE_RENEW)
+		type = IInstantGaming::Renew;
+	else if (AType == INSTANTGAMING_INVITE_ADJOURNED)
+		type = IInstantGaming::Adjourned;
+	else if (AType == INSTANTGAMING_INVITE_CONSTRUCTED)
+		type = IInstantGaming::Constructed;
+	return type;
+}
+
+QString InstantGaming::inviteTypeToString(int AType) const
+{
+	QString type;
+	switch (AType) {
+	case IInstantGaming::New:
+		type = INSTANTGAMING_INVITE_NEW;
+		break;
+	case IInstantGaming::Renew:
+		type = INSTANTGAMING_INVITE_RENEW;
+		break;
+	case IInstantGaming::Adjourned:
+		type = INSTANTGAMING_INVITE_ADJOURNED;
+		break;
+	case IInstantGaming::Constructed:
+		type = INSTANTGAMING_INVITE_CONSTRUCTED;
+		break;
+	default:
+		break;
+	}
+	return type;
+}
+
+int InstantGaming::terminateReasonToCode(const QString &AReason) const
+{
+	int reason;
+	if (AReason == INSTANTGAMING_REASON_WON)
+		reason = IInstantGaming::Won;
+	else if (AReason == INSTANTGAMING_REASON_LOST)
+		reason = IInstantGaming::Lost;
+	else if (AReason == INSTANTGAMING_REASON_DRAW)
+		reason = IInstantGaming::Draw;
+	else if (AReason == INSTANTGAMING_REASON_RESIGN)
+		reason = IInstantGaming::Resign;
+	else if (AReason == INSTANTGAMING_REASON_ADJOURN)
+		reason = IInstantGaming::Adjourn;
+	else if (AReason == INSTANTGAMING_REASON_CHEATING)
+		reason = IInstantGaming::Cheating;
+	return reason;
+}
+
+QString InstantGaming::terminateReasonToString(int AReason) const
+{
+	QString reason;
+	switch (AReason){
+	case IInstantGaming::Won:
+		reason = INSTANTGAMING_REASON_WON;
+		break;
+	case IInstantGaming::Lost:
+		reason = INSTANTGAMING_REASON_LOST;
+		break;
+	case IInstantGaming::Draw:
+		reason = INSTANTGAMING_REASON_DRAW;
+		break;
+	case IInstantGaming::Resign:
+		reason = INSTANTGAMING_REASON_RESIGN;
+		break;
+	case IInstantGaming::Adjourn:
+		reason = INSTANTGAMING_REASON_ADJOURN;
+		break;
+	case IInstantGaming::Cheating:
+		reason = INSTANTGAMING_REASON_CHEATING;
+		break;
+	default:
+		break;
+	}
+	return reason;
+}

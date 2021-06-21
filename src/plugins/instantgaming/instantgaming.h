@@ -28,31 +28,38 @@ public:
 	~InstantGaming();
 
 	//IPlugin
-	QObject *instance() {return this;}
-	QUuid pluginUuid() const {return INSTANTGAMING_UUID;}
-	void pluginInfo(IPluginInfo *APluginInfo);
-	bool initConnections(IPluginManager *APluginManager, int &AInitOrder);
-	bool initObjects();
-	bool initSettings();
-	bool startPlugin(){return true;}
-
-	virtual bool sendInvitation(const IInstantGamePlay &AGame);
-	virtual bool sendTurn(const IInstantGamePlay &AGame, const QDomElement &AElement);
-	virtual bool declineInvitation(const Jid &AStreamJid, const Jid &AContactJid, const QString &AReason, const QString &AThread);
-	virtual bool joinGame(const Jid &AStreamJid, const Jid &AContactJid, const QString &AThread);
+	virtual QObject *instance() {return this;}
+	virtual QUuid pluginUuid() const {return INSTANTGAMING_UUID;}
+	virtual void pluginInfo(IPluginInfo *APluginInfo);
+	virtual bool initConnections(IPluginManager *APluginManager, int &AInitOrder);
+	virtual bool initObjects();
+	virtual bool initSettings();
+	virtual bool startPlugin(){return true;}
+	//IInstantGaming
+	virtual bool sendInvitation(const QString &AThread, IDataForm &AForm, const QString &AMessage, int AType);
+	virtual bool sendTurn(const QString &AThread, const QString &AMessage, const QDomElement &AElement);
+	virtual bool joinGame(const Jid &AStreamJid, const Jid &AContactJid, const QString &AMessage, const QString &AThread);
 	virtual bool rejectGame(const Jid &AStreamJid, const Stanza &AStanza);
-	virtual bool sendSave(const Jid &AStreamJid, const Jid &AContactJid, const QString &AThread);
-	virtual bool sendSaved(const Jid &AStreamJid, const Jid &AContactJid, const QString &AThread);
-	virtual bool terminateGame(const Jid &AStreamJid, const Jid &AContactJid, const QString &AReason, const QString &AThread);
-
+	virtual bool sendSave(const QString &AThread);
+	virtual bool sendSaved(const QString &AThread);
+	virtual bool terminateGame(const QString &AThread, const QString &AMessage, int AReason);
+	virtual void selectGame(IInstantGamePlay &AGame, const QString &AMessage, int AType);
 	//IStanzaHandler
-	bool stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza &AStanza, bool &AAccept);
+	virtual bool stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza &AStanza, bool &AAccept);
 
 protected:
 	void registerDiscoFeatures();
 	bool isSupported(const Jid &AStreamJid, const Jid &AContactJid) const;
 	void updateToolBarAction(IMessageToolBarWidget *AWidget);
 	void showGameSelector(const Jid &AStreamJid, const Jid &AContactJid);
+	bool declineInvitation(const Jid &AStreamJid, const Jid &AContactJid, const QString &AReason, const QString &AThread);
+protected:
+	void startGame(IInstantGamePlay &AGame, int AType);
+protected:
+	int inviteTypeToCode(const QString &AType) const;
+	QString inviteTypeToString(int AType) const;
+	int terminateReasonToCode(const QString &AReason) const;
+	QString terminateReasonToString(int AReason) const;
 signals:
 	void invitationReceived(const IInstantGamePlay &AGame);
 	void invitationDeclined(const QString &AReason, const QString &AThread);
@@ -73,6 +80,7 @@ private:
 	int FSHIGames;
 	QHash<QUuid, IGame*> FGames;
 	QMap<IMessageToolBarWidget*, Action*> FToolBarActions;
+	QHash<QString, IInstantGamePlay> FActiveGames;
 private:
 	IXmppStreamManager *FXmppStreamManager;
 	IStanzaProcessor  *FStanzaProcessor;
