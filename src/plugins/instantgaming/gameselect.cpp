@@ -16,7 +16,7 @@ GameSelect::GameSelect(InstantGaming *AInstantGaming, const Jid &AStreamJid, con
 	FContactJid = AContactJid;
 	FInstantGaming = AInstantGaming;
 
-	setWindowIcon(IconStorage::staticStorage(RSR_STORAGE_MAPICONS)->getIcon(MNI_INSTANTGAMING));
+	setWindowIcon(IconStorage::staticStorage(RSR_STORAGE_MENUICONS)->getIcon(MNI_INSTANTGAMING));
 	setWindowTitle(tr("Play with - %1").arg(AContactJid.uFull()));
 
 	ui->tedMessage->setText(tr("would you like to play a little game?"));
