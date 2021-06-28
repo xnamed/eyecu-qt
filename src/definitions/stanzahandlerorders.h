@@ -33,6 +33,9 @@
 //Off-the-Record Messaging
 #define SHO_OTR                       500
 
+// Instant Gaming
+#define SHO_INSTANTGAMING             500
+
 //Default
 #define SHO_DEFAULT                   1000
 

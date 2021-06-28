@@ -35,5 +35,8 @@
 #define NNT_OTR_ESTABLISHED           "OtrEstablished"
 #define NNT_OTR_TERMINATED            "OtrTerminated"
 #define NNT_OTR_VERIFY                "OtrVerify"
+#define NNT_GAME_INVITE               "GameInvite"
+#define NNT_GAME_PLAY                 "GamePlay"
+#define NNT_GAME_STATE                "GameStateChange"
 // *** >>> eyeCU >>> ***
 #endif // DEF_NOTIFICATIONTYPES_H

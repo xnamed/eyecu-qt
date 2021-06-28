@@ -53,7 +53,9 @@ void GameSelect::onDialogAccepted()
 		instantGame.contactJid = FContactJid;
 		instantGame.var = item->data(0, TDR_VAR).toString();
 		instantGame.uuid = gameUuid;
+		instantGame.status = IInstantGaming::Pending;
 		instantGame.player = IInstantGaming::Initiator;
+		instantGame.type = IInstantGaming::New;
 
 		FInstantGaming->selectGame(instantGame, ui->tedMessage->toPlainText(), IInstantGaming::New);
 	}

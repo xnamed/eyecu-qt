@@ -9,6 +9,15 @@
 #include <interfaces/iservicediscovery.h>
 #include <interfaces/idataforms.h>
 #include <interfaces/imessagewidgets.h>
+#include <interfaces/inotifications.h>
+#include <QMessageBox>
+
+struct GameState {
+	QString threadId;
+	int state;
+	int type;
+	QString text;
+};
 
 class InstantGaming:
 		public QObject,
@@ -36,7 +45,7 @@ public:
 	virtual bool initSettings();
 	virtual bool startPlugin(){return true;}
 	//IInstantGaming
-	virtual bool sendInvitation(const QString &AThread, IDataForm &AForm, const QString &AMessage, int AType);
+	virtual bool sendInvitation(const QString &AThread, IDataForm &AForm, const QString &AReason, int AType);
 	virtual bool sendTurn(const QString &AThread, const QString &AMessage, const QDomElement &AElement);
 	virtual bool joinGame(const Jid &AStreamJid, const Jid &AContactJid, const QString &AMessage, const QString &AThread);
 	virtual bool rejectGame(const Jid &AStreamJid, const Stanza &AStanza);
@@ -54,20 +63,18 @@ protected:
 	void showGameSelector(const Jid &AStreamJid, const Jid &AContactJid);
 	bool declineInvitation(const Jid &AStreamJid, const Jid &AContactJid, const QString &AReason, const QString &AThread);
 protected:
-	void startGame(IInstantGamePlay &AGame, int AType);
+	void startGame(IInstantGamePlay &AGame);
+	void setTurn(const QString &AThread, const QDomElement &ATurnElem, const QString &AMessage);
+	void notifyGame(const QString &AThread, int AGameState, const QString &AMessage, int AType);
+	void showStatusEvent(IMessageViewWidget *AView, const QString &AHtml) const;
 protected:
 	int inviteTypeToCode(const QString &AType) const;
 	QString inviteTypeToString(int AType) const;
 	int terminateReasonToCode(const QString &AReason) const;
 	QString terminateReasonToString(int AReason) const;
+	QUuid findGameUuid(const QString &AVar) const;
 signals:
-	void invitationReceived(const IInstantGamePlay &AGame);
-	void invitationDeclined(const QString &AReason, const QString &AThread);
-	void gameJoined(const QString &AMessage, const QString &AThread);
-	void gamePlay(const QString &AMessage, QDomElement &ATurnElem, const QString &AThread);
-	void gameSaveRequested(const QString &AThread);
-	void gameSaved(const QString &AThread);
-	void gameTerminated(const QString AReason, const QString &AMessage, const QString &AThread);
+	void gameStateChanged(const QString &AThread, int AGameState, const QString &AMessage, int AType);
 protected slots:
 	void onXmppStreamOpened(IXmppStream *AXmppStream);
 	void onXmppStreamClosed(IXmppStream *AXmppStream);
@@ -76,17 +83,25 @@ protected slots:
 	void onToolBarWidgetCreated(IMessageToolBarWidget *AWidget);
 	void onToolBarWidgetAddressChanged(const Jid &AStreamBefore, const Jid &AContactBefore);
 	void onToolBarWidgetDestroyed(QObject *AObject);
+protected slots:
+	void onNotificationActivated(int ANotifyId);
+	void onNotificationRemoved(int ANotifyId);
+	void onInviteDialogFinished(int AResult);
 private:
 	int FSHIGames;
 	QHash<QUuid, IGame*> FGames;
 	QMap<IMessageToolBarWidget*, Action*> FToolBarActions;
 	QHash<QString, IInstantGamePlay> FActiveGames;
+	QMap<int, GameState> FGameNotify;
+	QStringList FSaveRequests;
+	QMap<QMessageBox *, QString> FInviteDialogs;
 private:
 	IXmppStreamManager *FXmppStreamManager;
 	IStanzaProcessor  *FStanzaProcessor;
 	IServiceDiscovery *FDiscovery;
 	IDataForms *FDataForms;
 	IMessageWidgets *FMessageWidgets;
+	INotifications *FNotifications;
 };
 
 #endif // INSTANTGAMING_H

@@ -29,6 +29,9 @@
 #define NTO_OTR_ESTABLISHED                    1100
 #define NTO_OTR_TERMINATED                     1110
 #define NTO_OTR_VERIFY						   1120
+#define NTO_GAME_INVITE_NOTIFY                 1230
+#define NTO_GAME_PLAY_NOTIFY                   1240
+#define NTO_GAME_STATE_NOTIFY                  1250
 // *** >>> eyeCU >>> ***
 
 #endif //  DEF_NOTIFICATIONTYPEORDERS_H

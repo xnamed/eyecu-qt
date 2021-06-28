@@ -17,6 +17,8 @@ struct IInstantGamePlay
 	QString var;
 	QUuid uuid;
 	int player;
+	int type;
+	int status;
 };
 
 class IInstantGaming {
@@ -31,7 +33,7 @@ public:
 		Renew,
 		Adjourned,
 		Constructed
-		};
+	};
 	enum Terminate {
 		Won,
 		Lost,
@@ -40,6 +42,21 @@ public:
 		Adjourn,
 		Cheating
 	};
+	enum Type {
+		Invitation,
+		Declined,
+		Joined,
+		GamePlay,
+		Saving,
+		Saved,
+		Termination
+	};
+	enum Status {
+		Pending,
+		Active,
+		Inactive
+	};
+
 	virtual QObject *instance() =0;
 	virtual bool sendInvitation(const QString &AThread, IDataForm &AForm, const QString &AMessage, int AType) =0;
 	//virtual bool declineInvitation(const Jid &AStreamJid, const Jid &AContactJid, const QString &AReason=QString(), const QString &AThread=QString()) =0;
