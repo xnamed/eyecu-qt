@@ -52,7 +52,7 @@ public:
 	virtual bool sendSave(const QString &AThread);
 	virtual bool sendSaved(const QString &AThread);
 	virtual bool terminateGame(const QString &AThread, const QString &AMessage, int AReason);
-	virtual void selectGame(IInstantGamePlay &AGame, const QString &AMessage, int AType);
+	virtual void selectGame(IInstantGame &AGame, const QString &AMessage, int AType);
 	//IStanzaHandler
 	virtual bool stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza &AStanza, bool &AAccept);
 
@@ -63,7 +63,7 @@ protected:
 	void showGameSelector(const Jid &AStreamJid, const Jid &AContactJid);
 	bool declineInvitation(const Jid &AStreamJid, const Jid &AContactJid, const QString &AReason, const QString &AThread);
 protected:
-	void startGame(IInstantGamePlay &AGame);
+	void startGame(IInstantGame &AGame);
 	void setTurn(const QString &AThread, const QDomElement &ATurnElem, const QString &AMessage);
 	void notifyGame(const QString &AThread, int AGameState, const QString &AMessage, int AType);
 	void showStatusEvent(IMessageViewWidget *AView, const QString &AHtml) const;
@@ -91,7 +91,7 @@ private:
 	int FSHIGames;
 	QHash<QUuid, IGame*> FGames;
 	QMap<IMessageToolBarWidget*, Action*> FToolBarActions;
-	QHash<QString, IInstantGamePlay> FActiveGames;
+	QHash<QString, IInstantGame> FActiveGames;
 	QMap<int, GameState> FGameNotify;
 	QStringList FSaveRequests;
 	QMap<QMessageBox *, QString> FInviteDialogs;

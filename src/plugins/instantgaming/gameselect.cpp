@@ -48,7 +48,7 @@ void GameSelect::onDialogAccepted()
 	if (item)
 	{
 		QUuid gameUuid = item->data(0, Qt::UserRole).toString();
-		IInstantGamePlay instantGame;
+		IInstantGame instantGame;
 		instantGame.streamJid = FStreamJid;
 		instantGame.contactJid = FContactJid;
 		instantGame.var = item->data(0, TDR_VAR).toString();

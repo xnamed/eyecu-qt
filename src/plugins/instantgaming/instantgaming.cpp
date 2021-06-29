@@ -198,7 +198,7 @@ bool InstantGaming::isSupported(const Jid &AStreamJid, const Jid &AContactJid) c
 bool InstantGaming::sendInvitation(const QString &AThread, IDataForm &AForm, const QString &AReason, int AType)
 {
 	qDebug() << "sendInvitation:" << AThread;
-	IInstantGamePlay game = FActiveGames.value(AThread);
+	IInstantGame game = FActiveGames.value(AThread);
 	if (FStanzaProcessor && FDataForms)
 	{
 		Stanza invite(STANZA_KIND_MESSAGE);
@@ -274,7 +274,7 @@ bool InstantGaming::rejectGame(const Jid &AStreamJid, const Stanza &AStanza)
 bool InstantGaming::sendTurn(const QString &AThread, const QString &AMessage, const QDomElement &AElement)
 {
 	qDebug() << "sendTurn:" << AThread;
-	IInstantGamePlay game = FActiveGames.value(AThread);
+	IInstantGame game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza turn(STANZA_KIND_MESSAGE);
@@ -295,7 +295,7 @@ bool InstantGaming::sendTurn(const QString &AThread, const QString &AMessage, co
 bool InstantGaming::sendSave(const QString &AThread)
 {
 	qDebug() << "sendSave:" << AThread;
-	IInstantGamePlay game = FActiveGames.value(AThread);
+	IInstantGame game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza save(STANZA_KIND_MESSAGE);
@@ -311,7 +311,7 @@ bool InstantGaming::sendSave(const QString &AThread)
 bool InstantGaming::sendSaved(const QString &AThread)
 {
 	qDebug() << "sendSaved:" << AThread;
-	IInstantGamePlay game = FActiveGames.value(AThread);
+	IInstantGame game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza saved(STANZA_KIND_MESSAGE);
@@ -327,7 +327,7 @@ bool InstantGaming::sendSaved(const QString &AThread)
 bool InstantGaming::terminateGame(const QString &AThread, const QString &AMessage, int AReason)
 {
 	qDebug() << "terminateGame:" << terminateReasonToString(AReason);
-	IInstantGamePlay game = FActiveGames.value(AThread);
+	IInstantGame game = FActiveGames.value(AThread);
 	if (FStanzaProcessor)
 	{
 		Stanza terminate(STANZA_KIND_MESSAGE);
@@ -359,7 +359,7 @@ bool InstantGaming::stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza
 		if (threadId.isEmpty())
 			return false;
 
-		IInstantGamePlay instantGame = FActiveGames.value(threadId);
+		IInstantGame instantGame = FActiveGames.value(threadId);
 
 		//Invitation / Game Loading
 		if (!AStanza.firstElement("invite",NS_INSTANTGAMING).isNull())
@@ -425,7 +425,10 @@ bool InstantGaming::stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza
 				notifyGame(threadId,Joined,message.body(),0);
 			}
 		}
-		//Game Play
+		/* Game Play
+		 * A receipt for each message MAY be requested in accordance
+		 * with Message Delivery Receipts (XEP-0184).
+		 */
 		else if (!AStanza.firstElement("turn",NS_INSTANTGAMING).isNull())
 		{
 			QDomElement turnElem = AStanza.firstElement("turn",NS_INSTANTGAMING);
@@ -498,7 +501,7 @@ void InstantGaming::onNotificationActivated(int ANotifyId)
 	if (FGameNotify.contains(ANotifyId))
 	{
 		GameState gameState = FGameNotify.take(ANotifyId);
-		IInstantGamePlay game = FActiveGames.value(gameState.threadId);
+		IInstantGame game = FActiveGames.value(gameState.threadId);
 		IGame *plugin = FGames.value(findGameUuid(game.var));
 		if (plugin)
 		{
@@ -563,7 +566,7 @@ void InstantGaming::onInviteDialogFinished(int AResult)
 	QMessageBox *inviteDialog = qobject_cast<QMessageBox *>(sender());
 	if (inviteDialog)
 	{
-		IInstantGamePlay game = FActiveGames.value(FInviteDialogs.take(inviteDialog));
+		IInstantGame game = FActiveGames.value(FInviteDialogs.take(inviteDialog));
 
 		if (AResult == QMessageBox::Yes)
 		{
@@ -618,7 +621,7 @@ void InstantGaming::showGameSelector(const Jid &AStreamJid, const Jid &AContactJ
 	WidgetManager::showActivateRaiseWindow(select);
 }
 
-void InstantGaming::selectGame(IInstantGamePlay &AGame, const QString &AMessage, int AType)
+void InstantGaming::selectGame(IInstantGame &AGame, const QString &AMessage, int AType)
 {
 	qDebug() << "Selected game type:" << inviteTypeToString(AGame.type);
 	IDataForm form;
@@ -651,7 +654,7 @@ void InstantGaming::selectGame(IInstantGamePlay &AGame, const QString &AMessage,
 }
 
 // Start when the opponent accepts the invitation
-void InstantGaming::startGame(IInstantGamePlay &AGame)
+void InstantGaming::startGame(IInstantGame &AGame)
 {
 	IGame *plugin = FGames.value(AGame.uuid);
 	if (plugin)
@@ -677,7 +680,7 @@ void InstantGaming::setTurn(const QString &AThread, const QDomElement &ATurnElem
 void InstantGaming::notifyGame(const QString &AThread, int AGameState, const QString &AMessage, int AType)
 {
 	qDebug() << "notifyGame:" << AThread;
-	IInstantGamePlay instantGame = FActiveGames.value(AThread);
+	IInstantGame instantGame = FActiveGames.value(AThread);
 
 	GameState gameState;
 	gameState.threadId = AThread;
