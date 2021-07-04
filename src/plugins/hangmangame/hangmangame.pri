@@ -1,3 +1,8 @@
-SOURCES += hangmangame.cpp
+SOURCES += hangmangame.cpp \
+    $$PWD/gamewindow.cpp
 
-HEADERS += hangmangame.h
+HEADERS += hangmangame.h \
+    $$PWD/gamewindow.h
+
+FORMS += \
+    $$PWD/gamewindow.ui

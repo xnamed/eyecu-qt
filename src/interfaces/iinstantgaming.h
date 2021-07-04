@@ -67,6 +67,7 @@ public:
 	virtual bool rejectGame(const Jid &AStreamJid, const Stanza &AStanz) =0;
 	virtual bool terminateGame(const QString &AThread, const QString &AMessage, int AReason) =0;
 	virtual void selectGame(IInstantGame &AGame, const QString &AMessage, int AType) =0;
+	virtual IInstantGame findGame(const QString &AThread) const =0;
 };
 
 Q_DECLARE_INTERFACE(IInstantGaming, "RWS.Plugin.IInstantGaming/1.0")

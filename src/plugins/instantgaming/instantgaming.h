@@ -53,6 +53,7 @@ public:
 	virtual bool sendSaved(const QString &AThread);
 	virtual bool terminateGame(const QString &AThread, const QString &AMessage, int AReason);
 	virtual void selectGame(IInstantGame &AGame, const QString &AMessage, int AType);
+	virtual IInstantGame findGame(const QString &AThread) const;
 	//IStanzaHandler
 	virtual bool stanzaReadWrite(int AHandleId, const Jid &AStreamJid, Stanza &AStanza, bool &AAccept);
 

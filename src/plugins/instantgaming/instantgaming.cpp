@@ -653,6 +653,11 @@ void InstantGaming::selectGame(IInstantGame &AGame, const QString &AMessage, int
 	}
 }
 
+IInstantGame InstantGaming::findGame(const QString &AThread) const
+{
+	return FActiveGames.value(AThread);
+}
+
 // Start when the opponent accepts the invitation
 void InstantGaming::startGame(IInstantGame &AGame)
 {
